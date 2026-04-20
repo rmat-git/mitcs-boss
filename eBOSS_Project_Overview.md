@@ -6,15 +6,31 @@
 ## What Is This?
 A web-based ePortal for the Business One Stop Shop (BOSS) process in the Philippines. Lets business owners register, apply for permits, and comply with government requirements online — no need to physically visit city hall.
 
-Legal basis: RA 11032 (Ease of Doing Business Act) — mandates 3-day processing for new apps, 1-day for renewals.
+Modeled after **EBIS 4.0** (Electronic Business Integrated System) implemented by Bacolod City's MITCS Department — a proven working reference for simultaneous multi-department processing.
+
+Legal basis: RA 11032 (Ease of Doing Business Act) — mandates 3-day processing for new apps, 1-day for renewals. Also aligns with Joint Memorandum Circulars on BOSS implementation.
+
+---
+
+## Application Phases (Based on EBIS 4.0)
+
+| Phase | Name | What Happens |
+|---|---|---|
+| 1 | Registration & Application | User onboarding, form fill, document upload |
+| 2 | BPLO Review & Departmental Clearance | Parallel routing to all regulatory offices |
+| 3 | Assessment, Billing & Payment | Fee computation, invoicing, online/OTC payment |
+| 4 | Issuance & Tracking | QR-embedded permit generation, email delivery, status tracking |
+
+> Phase 2 is a hard gate — application cannot move to billing until **all** required department clearances return approved.
 
 ---
 
 ## Goals
 - One portal for all BOSS transactions
 - Online submission + real-time tracking
-- Connect with DTI, SEC, BIR, BFP, LGU, SSS, PhilHealth, Pag-IBIG
+- Simultaneous parallel clearance routing to all departments
 - Support all business types: Sole Prop, Partnership, Corp/OPC, Cooperative
+- QR code verification embedded on issued permits
 - Works on desktop and mobile
 
 ---
@@ -23,10 +39,11 @@ Legal basis: RA 11032 (Ease of Doing Business Act) — mandates 3-day processing
 
 | User | Role |
 |---|---|
-| Business Applicant | Submits apps, uploads docs, pays fees, tracks status |
-| LGU Officer | Reviews, approves/rejects, issues permits |
-| Agency Rep (BFP, Sanitary, Zoning) | Receives referrals, acts on them |
-| System Admin | Manages users, configs, reports |
+| Applicant — New Business | Registers with email, submits application, uploads docs, pays, downloads permit |
+| Applicant — Renewal | Uses previous Business Permit No. + Account No. to pull existing records |
+| BPLO Officer | Initial formal review, routes to departments, issues final permit |
+| Department Reviewer | BFP, Zoning, CHO, OBO, BENRO, Barangay, etc. — approves or denies clearance |
+| System Admin | Manages users, fee config, audit logs |
 
 ---
 
@@ -46,49 +63,88 @@ Legal basis: RA 11032 (Ease of Doing Business Act) — mandates 3-day processing
 
 ---
 
-## Core Features (Rough)
+## Core Features
 
 ### Public (No Login)
 - Landing page with BOSS explainer
 - Step-by-step registration guides (all business types)
-- Application status tracker via reference number
+- Application status tracker via reference number (no login needed)
 
-### Applicant Side (Login Required)
-- Register/login with email or mobile
-- Business profile form (adapts to business type)
-- Document uploads (DTI/SEC cert, IDs, lease, barangay clearance)
-- Full application status dashboard
-- Online payment
-- Download digital permit/certificate
+### Phase 1 — Registration & Application (Login Required)
+- New business: register with email, data must match DTI/SEC/CDA records
+- Renewal: login with previous Business Permit No. + Business Account No.
+- Dynamic application form — adapts fields based on business type
+- Dynamic document checklist based on business profile:
+  - **Sole Prop** → DTI Registration
+  - **Corporation** → SEC Registration + Board Resolution / Secretary's Certificate + SPA/Authorization with ID
+  - **Cooperative** → CDA Registration
+  - **All** → Owner's valid ID
+  - **Rented premises** → Lease Contract
+  - **Franchise** → Written Franchise Agreement
+- System emails unified application form to user on successful submission
 
-### Officer/Government Side
-- Application queue + review tools
-- Approve/reject with comments
-- Inter-agency referral (BPLO → BFP → Sanitary → Zoning)
-- SLA monitoring (RA 11032 compliance)
-- Basic reports
+### Phase 2 — BPLO Review & Departmental Clearance
+- BPLO conducts initial formal document review
+- Application simultaneously routed to all required departments:
+  - Barangay (BRGY) Clearance
+  - Bureau of Fire Protection (BFP)
+  - Zoning Division
+  - City Health Office (CHO)
+  - Office of the Building Official (OBO)
+  - City Environment and Natural Resources Office (BENRO)
+  - BTTMD
+  - City Administrator
+  - City Veterinarian
+  - City Agriculture
+  - Tourism Office
+- Department dashboard shows real-time status per department: Pending / Approved / Denied
+- Application is **locked** from Phase 3 until all clearances are approved
+
+### Phase 3 — Assessment, Billing & Payment
+- System computes fees based on verified business data
+- Generates formal billing statement
+- Payment channels:
+  - Online: GCash, PayMaya, DBP Visa, Landbank
+  - Over the counter at treasury office
+- Webhook confirmation auto-generates Electronic Official Receipt (e-OR)
+
+### Phase 4 — Permit Issuance & Tracking
+- e-OR triggers auto-generation of digital Mayor's Permit
+- QR code embedded on permit + barangay clearance for authenticity verification
+- QR scan cross-references live database to validate document
+- Permit dispatched via email automatically
+- Option for physical pickup at BPLO office
+- Status tracking via Application No. + Business Account No.
 
 ### Admin
-- User management + roles
-- Fee configuration per LGU
-- Audit logs
-
-### Notifications
-- Email + SMS on status changes
-- Renewal reminders
+- User management + role assignment (BPLO, department reviewers, admin)
+- Fee schedule configuration
+- Audit logs for all actions
 
 ---
 
 ## Tech Stack
 
-| Layer | Option |
+| Layer | Choice |
 |---|---|
 | Frontend | React + Tailwind CSS |
 | Backend | Laravel (PHP) |
 | Database | PostgreSQL + Redis |
 | Auth | Laravel Sanctum (SPA) |
 | File Storage | AWS S3 or MinIO |
-| Payment | PayMongo or DragonPay |
+| Payment | GCash, PayMaya, DBP Visa, Landbank (via PayMongo or DragonPay) |
+
+---
+
+## Key Frontend Components (Reference: EBIS 4.0)
+
+| Component | Purpose |
+|---|---|
+| `ApplicationWizard.jsx` | Multi-step Phase 1 form — conditionally renders fields (e.g. Lease Contract only if `isRented: true`, Franchise Agreement only if franchise type) |
+| `DepartmentDashboard.jsx` | Phase 2 admin view — maps all departments, shows real-time Pending/Approved/Denied badges per clearance |
+| `PaymentGateway.jsx` | Phase 3 — renders online payment options or generates OTC payment slip |
+| `TrackerPortal.jsx` | Public status lookup — input App No. + Account No., returns phase timeline |
+| `PermitViewer.jsx` | Phase 4 — displays QR-embedded digital permit, download button |
 
 ---
 
