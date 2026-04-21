@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from "react";
+import logoImg from '../../assets/logo.png';
 
 const NAV_LINKS = [
   { label: "About", href: "#about" },
@@ -80,16 +81,18 @@ function Navbar() {
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 8,
-            background: "linear-gradient(135deg, #ff9c43 0%, #e07620 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L3 6.5V13.5L10 18L17 13.5V6.5L10 2Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-              <path d="M10 6V14M7 8L13 8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
+          
+          {/* The new PNG logo */}
+          <img 
+            src={logoImg} 
+            alt="Bacolod City eBOSS Logo" 
+            style={{ 
+              width: 36, 
+              height: 36, 
+              objectFit: "contain" 
+            }} 
+          />
+
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "#e07620", letterSpacing: "-0.3px", lineHeight: 1 }}>eBOSS</div>
             <div style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.05em", lineHeight: 1.2 }}>BACOLOD CITY</div>
