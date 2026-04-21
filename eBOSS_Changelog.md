@@ -1,6 +1,6 @@
 # eBOSS ePortal — Changelog
 > **Status:** Active Development | **Started:** April 2026
-> **Current Version:** v0.2.1
+> **Current Version:** v0.2.0
 > **Tags:** `NEW` `IMPROVED` `FIX` `SECURITY` `REMOVED`
 
 ---
@@ -17,22 +17,24 @@ Use this section to get an instant read on the project state before diving into 
 | Backend repo | `mitcs boss/blpo-boss-api/` (currently dummy) |
 | Frontend stack | React + Vite + Tailwind CSS |
 | Backend stack | Laravel 11 + Sanctum + PostgreSQL |
-| Auth method | Laravel Sanctum (SPA / stateful cookie) |
-| Current version | v0.2.1 — landing page content aligned to EBIS 4.0, EBIS version rebrand complete |
-| Next milestone | v0.3.0 — auth layer (Login, Register, Axios, Zustand, routing) |
+| Auth method | Laravel Sanctum (token-based, Bearer header) |
+| Current version | v0.3.0 — Register page done, auth wired, color rebrand to orange |
+| Next milestone | v0.4.0 — Login page, protected routes, applicant dashboard stub |
 | Reference system | EBIS 4.0 — Bacolod City MITCS (4-phase BOSS pipeline) |
 | Legal basis | RA 11032 — Ease of Doing Business Act |
 
-### What exists right now (v0.2.0)
+### What exists right now (v0.3.0)
 - ✅ `Landing.jsx` — fully built, all sections complete
-- ✅ Dummy Laravel backend — 4 auth endpoints only
-- ✅ PostgreSQL connected (`eboss_dummy` DB), Sanctum configured, CORS set for Vite dev server
-- ✅ Test user seeded: `test@eboss.dev` / `password`
-- ❌ No Axios service layer
-- ❌ No Zustand store
-- ❌ No React Router setup
-- ❌ No `Login.jsx` / `Register.jsx`
-- ❌ No protected routes
+- ✅ `Register.jsx` — full form with validation, show/hide password, server error banner, spinner
+- ✅ Axios token-based auth — Bearer token injected via request interceptor, 401 auto-logout
+- ✅ Zustand auth store — `user`, `token`, `isAuthenticated`, `login()`, `logout()`, `register()`
+- ✅ Laravel Sanctum configured for token-based auth (not cookie/stateful)
+- ✅ MySQL connected (`bplo_db`), migrations run, test user created
+- ✅ Primary color rebranded from `#1a4f8b` (blue) → `#ff9c43` (orange)
+- ✅ Test user: `test@eboss.dev` / `password` (Al Christian)
+- ❌ No `Login.jsx` yet
+- ❌ No React Router / protected routes yet
+- ❌ No applicant dashboard yet
 
 ### Target application flow (v1.0.0)
 4 phases based on EBIS 4.0:
@@ -47,72 +49,78 @@ Use this section to get an instant read on the project state before diving into 
 
 ---
 
-### v0.2.1 — Landing Page Content Alignment + EBIS 4.0 Rebrand
-**Date:** April 20, 2026 | **Status:** 🟢 Current
+### v0.3.0 — Auth Wired + Register Page + Color Rebrand
+**Date:** April 21, 2026 | **Status:** 🟢 Current
 
-Content-only patch. No layout, styling, or structural changes. All text and data in `Landing.jsx` aligned to the official EBIS 4.0 / Bacolod City BOSS architecture document. System version reference updated from EBIS 2.0 → EBIS 4.0 throughout.
+Register page built. Auth switched from cookie-based to token-based. Primary color rebranded from blue to orange. Backend migrated from PostgreSQL dummy to MySQL (`bplo_db`).
 
 #### Frontend — `blpo-boss/`
 
-**Modified files:**
-- `src/pages/public/Landing.jsx`
+**New files:**
+- `src/pages/auth/Register.jsx` — full registration page
 
-**EBIS version rebrand (6 instances updated):**
-- Hero badge: `EBIS 2.0 — Bacolod City BOSS Portal` → `EBIS 4.0 — Bacolod City BOSS Portal`
-- Hero card title bar: `EBIS 2.0 — Application Status` → `EBIS 4.0 — Application Status`
-- Business Types body copy: `EBIS 2.0 dynamically loads...` → `EBIS 4.0 dynamically loads...`
-- Footer logo label: `EBIS 2.0 — BOSS Portal` → `EBIS 4.0 — BOSS Portal`
-- Footer description: `Electronic Business Integrated System 2.0` → `Electronic Business Integrated System 4.0`
-- Footer copyright: `© 2025 EBIS 2.0 — Bacolod City Government` → `© 2025 EBIS 4.0 — Bacolod City Government`
+**Register.jsx features:**
+- Fields: name, email, password, confirm password
+- Client-side validation (all fields required, password match)
+- Show/hide password toggle on both password fields
+- Error banner for server-side auth errors (e.g. email already taken)
+- Submit button shows spinner + disabled state while loading
+- Redirects to `/dashboard` on success or if already authenticated
+- `useEffect` clears all field errors on any input change
+- Body scroll lock active on this page
 
-**Navbar:**
-- `IMPROVED` Sub-label changed from `ePORTAL` → `BACOLOD CITY`
+**Auth layer:**
+- `src/services/api.js` — token-based Axios setup
+  - Reads Bearer token from Zustand store on every request via request interceptor
+  - Removed `withCredentials: true` and all `initCsrf()` / `sanctum/csrf-cookie` logic
+  - Response interceptor: auto-calls `logout()` + clears auth state on 401
+- `src/store/auth.js` — Zustand store: `user`, `token`, `isAuthenticated`, `login()`, `logout()`, `register()`
 
-**Hero section:**
-- `IMPROVED` Headline changed from `Your Business Permit, Done Online.` → `Your Mayor's Permit, Done Online.`
-- `IMPROVED` Subtext updated to reference simultaneous departmental clearances and Bacolod City Hall specifically
-- `IMPROVED` Trust stats updated: `3 days / 1 day / 100% Secure` → `4 Phases / 11+ Concurrent dept. clearances / QR-verified digital permits`
-- `IMPROVED` Hero card progress steps renamed to reflect the 4 EBIS phases: `Application Submitted` / `Dept. Clearances Approved` / `Payment Confirmed` / `Permit Issued`
-- `IMPROVED` Hero card permit-ready message now references QR verification
+**Color rebrand:**
+- Primary color changed from `#1a4f8b` (blue) → `#ff9c43` (orange)
+- All hover states, borders, and accent backgrounds updated to match orange theme
 
-**Agency Strip:**
-- `IMPROVED` Label changed from `Connected agencies` → `Clearing departments`
-- `IMPROVED` Agency list replaced: `DTI, SEC, BIR, BFP, LGU, SSS, PhilHealth, Pag-IBIG` → `BPLO, BFP, Zoning, City Health, OBO, BENRO, Barangay, City Administrator, Tourism Office, City Agriculture`
+#### Backend — `blpo-boss-api/` (Laravel 11)
 
-**How It Works:**
-- `IMPROVED` Subtitle updated to reference joint memorandum circulars and simultaneous clearance processing
-- `IMPROVED` Step 01: `Create an Account` → `Register & Apply` — describes email registration and required document types
-- `IMPROVED` Step 02: `Submit Your Application` → `BPLO Review & Clearances` — describes parallel routing to all required departments
-- `IMPROVED` Step 03: `Pay Fees Online` → `Assessment & Payment` — lists actual payment channels: GCash, PayMaya, DBP Visa, Landbank, OTC
-- `IMPROVED` Step 04: `Receive Your Permit` — now references QR-embedded digital permit, auto-email delivery, and BPLO hard-copy pickup option
+**Auth method changed:** cookie/stateful → token-based (Bearer)
 
-**Business Types:**
-- `REMOVED` `Partnership` — not a supported entity type in EBIS 4.0
-- `NEW` `Franchise Business` — added with Franchise Agreement document requirement noted
-- `IMPROVED` All entity descriptions updated to cite their respective registration bodies and required documents (DTI / SEC + Board Resolution / CDA)
-- `IMPROVED` Section heading: `All business types, one portal.` → `All business structures, one portal.`
-- `IMPROVED` Body copy updated to reference dynamic document loading by business structure
-- `IMPROVED` CTA link label: `View registration guides →` → `View document requirements →`
+**Fixes applied:**
 
-**Track Section:**
-- `IMPROVED` Description updated to specify Application Number + Business Account Number as required lookup fields
-- `IMPROVED` Input placeholder: `BOSS-2025-04891` → `APP-2025-04891`
-- `IMPROVED` Helper text updated to reference both lookup fields by name
+| Issue | Fix |
+|---|---|
+| `tokens()` undefined error | Added `HasApiTokens` trait to `App\Models\User` |
+| Missing DB tables | Ran `php artisan migrate` — created `personal_access_tokens`, `sessions`, `cache`, `jobs` |
+| Duplicate migrations | Removed 3 duplicate `create_personal_access_tokens_table` files, kept original |
+| Session driver error | Switched `SESSION_DRIVER` to `file` in `.env` (avoids `sessions` table dependency) |
+| Invalid `.env` | Fixed broken `DB_CONNECTION` line — inline comments not supported in `.env` |
+| Unknown database error | Created `bplo_db` MySQL database via phpMyAdmin before running migrations |
+| CSRF mismatch on API | Added `validateCsrfTokens(except: ['api/*'])` to `bootstrap/app.php` |
 
-**Hero card (layout fix):**
-- `FIX` Title bar text was visually off-center due to flex layout competing with traffic-light dots — fixed via `position: absolute; left: 0; right: 0; textAlign: center` on the title and `position: relative` on the parent container
+**Config changes:**
+- `App\Models\User` — added `use Laravel\Sanctum\HasApiTokens`
+- `bootstrap/app.php` — CSRF excluded for `api/*` routes
+- `SESSION_DRIVER=file` in `.env`
+- Database switched: PostgreSQL `eboss_dummy` → MySQL `bplo_db`
 
-**Footer:**
-- `IMPROVED` Description updated to credit MITCS (Management Information Technology and Computer Services Department), Bacolod City
-- `IMPROVED` Services column: `Start Application` → `New Application`
-- `IMPROVED` Government column replaced with `Departments` column listing BPLO, BFP, City Health Office, Zoning Division
-- `IMPROVED` Support column: `Contact Us` → `Contact BPLO`
-- `IMPROVED` Compliance note: `DICT ICT Standards` → `JMC Standards`
+**Test credentials:**
+```
+Name:     Al Christian
+Email:    test@eboss.dev
+Password: password
+Created via: php artisan tinker
+```
+
+#### Pending → carry into v0.4.0
+- `src/pages/auth/Login.jsx` — email + password form
+- `src/routes/index.jsx` — full React Router setup
+- `src/routes/ProtectedRoute.jsx` — auth guard
+- `src/pages/applicant/Dashboard.jsx` — placeholder post-login page
+- Wire landing page "Start Application" CTA through auth check
 
 ---
 
 ### v0.2.0 — Frontend Scaffold + Dummy Backend
-**Date:** April 20, 2026 | **Status:** ✅ Superseded by v0.2.1
+**Date:** April 20, 2026 | **Status:** ✅ Superseded by v0.3.0
 
 Landing page fully built. Full Laravel backend replaced with a minimal dummy for auth testing only. Development is frontend-first.
 
@@ -216,20 +224,17 @@ Initial repos created. Both frontend and backend initialized under `mitcs boss/`
 
 ---
 
-### v0.3.0 — Auth Layer + Routing *(Next)*
+### v0.4.0 — Login Page + Routing + Protected Routes *(Next)*
 **Date:** TBD | **Status:** 🔵 Up Next
 
-Wire frontend auth to dummy backend. Establish routing foundation for all future pages.
+Wire login, establish React Router, protect authenticated routes.
 
-- `NEW` `src/services/api.js` — Axios instance, base URL `VITE_API_URL`, calls `GET /sanctum/csrf-cookie` before login
-- `NEW` `src/store/auth.js` — Zustand store: `user`, `token`, `isAuthenticated`, `login()`, `logout()`, `register()`
+- `NEW` `src/pages/auth/Login.jsx` — email + password form, calls Zustand `login()`, redirects to `/dashboard`
 - `NEW` `src/routes/index.jsx` — full React Router `<Routes>` with all defined paths
 - `NEW` `src/routes/ProtectedRoute.jsx` — checks `isAuthenticated`, redirects to `/login`
-- `NEW` `src/pages/auth/Login.jsx` — form → calls `login()` → redirect to `/dashboard`
-- `NEW` `src/pages/auth/Register.jsx` — form → calls `register()` → redirect to `/dashboard`
-- `NEW` `src/pages/applicant/Dashboard.jsx` — placeholder authenticated landing
+- `NEW` `src/pages/applicant/Dashboard.jsx` — placeholder authenticated landing page
 - `NEW` `main.jsx` wrapped with `<BrowserRouter>`
-- `NEW` Landing page CTAs wired: Start Application → auth check → `/apply` or `/login`
+- `NEW` Landing page "Start Application" CTA wired through auth check → `/apply` or `/login`
 
 ---
 
@@ -337,8 +342,8 @@ Multi-LGU platform, PhilSys auth, full agency integrations.
 |---|---|---|---|
 | Frontend | React + Vite + Tailwind CSS | ✅ Confirmed | |
 | Backend | Laravel 11 | ✅ Confirmed | |
-| Auth | Laravel Sanctum (SPA stateful) | ✅ Confirmed | Cookie-based, works with React SPA |
-| Database | PostgreSQL | ✅ Confirmed | |
+| Auth | Laravel Sanctum (token-based, Bearer header) | ✅ Confirmed | Switched from cookie/stateful in v0.3.0 |
+| Database | MySQL (`bplo_db`) | ✅ Confirmed | Switched from PostgreSQL in v0.3.0 |
 | Cache / Queue | Redis | ✅ Confirmed | Laravel Horizon for async jobs |
 | State management | Zustand | 🟡 Leaning confirmed | Lightweight, simple API |
 | File storage | AWS S3 or MinIO | ❌ Pending | Budget/hosting dependent |
@@ -365,12 +370,12 @@ Multi-LGU platform, PhilSys auth, full agency integrations.
 
 ## Open Issues / TBD
 
-### Active (v0.3.0 blockers)
-- [ ] Build `src/services/api.js` — Axios + CSRF interceptor
-- [ ] Build `src/store/auth.js` — Zustand auth store
+### Active (v0.4.0 blockers)
+- [ ] Build `src/pages/auth/Login.jsx`
 - [ ] Set up `src/routes/index.jsx` + `ProtectedRoute.jsx`
-- [ ] Build `Login.jsx` and `Register.jsx`
-- [ ] Wire landing page CTAs to router
+- [ ] Wrap `main.jsx` with `<BrowserRouter>`
+- [ ] Build `src/pages/applicant/Dashboard.jsx` stub
+- [ ] Wire landing page "Start Application" CTA through auth check
 - [ ] Confirm `vite.config.js` proxy port matches Laravel
 
 ### Ongoing
