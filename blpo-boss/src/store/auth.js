@@ -65,8 +65,8 @@ const useAuthStore = create(
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'eboss-auth',          // localStorage key
-      partialize: (state) => ({    // only persist token; re-fetch user on mount
+      name: 'eboss-auth',
+      partialize: (state) => ({
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),

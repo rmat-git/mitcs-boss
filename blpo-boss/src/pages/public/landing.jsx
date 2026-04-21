@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from "react";
 import logoImg from '../../assets/logo.png';
+import useAuthStore from '../../store/auth';
 
 const NAV_LINKS = [
   { label: "About", href: "#about" },
@@ -58,13 +59,41 @@ function useInView(threshold = 0.15) {
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  // ── Auth ──────────────────────────────────────────────────────
+  const { isAuthenticated, user, logout } = useAuthStore();
+
+  // user.name is preferred; fall back to email prefix while fetchUser() is in flight,
+  // then "My Account" if token was cleared (should not normally happen).
+  const displayName = user?.name
+    ?? user?.email?.split('@')[0]
+    ?? 'My Account';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    await logout();
+    navigate("/");
+  };
 
   return (
     <nav style={{
@@ -79,20 +108,14 @@ function Navbar() {
         maxWidth: 1200, margin: "0 auto", height: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
+
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          
-          {/* The new PNG logo */}
-          <img 
-            src={logoImg} 
-            alt="Bacolod City eBOSS Logo" 
-            style={{ 
-              width: 36, 
-              height: 36, 
-              objectFit: "contain" 
-            }} 
+          <img
+            src={logoImg}
+            alt="Bacolod City eBOSS Logo"
+            style={{ width: 36, height: 36, objectFit: "contain" }}
           />
-
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "#e07620", letterSpacing: "-0.3px", lineHeight: 1 }}>eBOSS</div>
             <div style={{ fontSize: 10, color: "#64748b", letterSpacing: "0.05em", lineHeight: 1.2 }}>BACOLOD CITY</div>
@@ -112,28 +135,152 @@ function Navbar() {
           ))}
         </div>
 
-        {/* CTA buttons */}
+        {/* CTA — switches based on auth state */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link to="/login" style={{
-            fontSize: 13, fontWeight: 600, color: "#ff9c43",
-            textDecoration: "none", padding: "8px 16px",
-            border: "1.5px solid #ff9c43", borderRadius: 6,
-            transition: "all 0.2s",
-          }}
-            onMouseEnter={e => { e.target.style.background = "#ff9c43"; e.target.style.color = "white"; }}
-            onMouseLeave={e => { e.target.style.background = "transparent"; e.target.style.color = "#ff9c43"; }}
-          >Log In</Link>
-          <Link to="/register" style={{
-            fontSize: 13, fontWeight: 600, color: "white",
-            textDecoration: "none", padding: "8px 16px",
-            background: "#ff9c43", borderRadius: 6,
-            border: "1.5px solid #ff9c43",
-            transition: "all 0.2s",
-          }}
-            onMouseEnter={e => e.target.style.background = "#e07620"}
-            onMouseLeave={e => e.target.style.background = "#ff9c43"}
-          >Register</Link>
+          {isAuthenticated ? (
+
+            /* ── Logged-in: rounded avatar pill ── */
+            <div ref={dropdownRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setDropdownOpen(o => !o)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "6px 12px 6px 6px",
+                  border: `1.5px solid ${dropdownOpen ? "#ff9c43" : "#ffd9a8"}`,
+                  borderRadius: 999,
+                  background: "white",
+                  cursor: "pointer",
+                  transition: "border-color 0.2s",
+                  fontFamily: "inherit",
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#ff9c43"}
+                onMouseLeave={e => { if (!dropdownOpen) e.currentTarget.style.borderColor = "#ffd9a8"; }}
+              >
+                {/* Face icon circle */}
+                <div style={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  background: "#ff9c43",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="5.5" r="2.8" stroke="white" strokeWidth="1.4" />
+                    <path d="M2.5 13.5C2.5 11.015 5.015 9 8 9s5.5 2.015 5.5 4.5"
+                      stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                </div>
+
+                {/* Display name */}
+                <span style={{
+                  fontSize: 13, fontWeight: 600, color: "#374151",
+                  maxWidth: 130, overflow: "hidden",
+                  textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {displayName}
+                </span>
+
+                {/* Chevron */}
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"
+                  style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                  <path d="M2 4l4 4 4-4" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {/* Dropdown menu */}
+              {dropdownOpen && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 8px)", right: 0,
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  minWidth: 190,
+                  overflow: "hidden",
+                  zIndex: 200,
+                }}>
+                  {/* Signed-in-as header */}
+                  <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      Signed in as
+                    </div>
+                    <div style={{
+                      fontSize: 13, fontWeight: 600, color: "#1a1208",
+                      marginTop: 3, overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {user?.email ?? displayName}
+                    </div>
+                  </div>
+
+                  {/* Nav items */}
+                  {[
+                    { label: "My Applications", href: "/dashboard" },
+                    { label: "Account Settings", href: "/settings" },
+                  ].map(item => (
+                    <Link
+                      key={item.label}
+                      to={item.href}
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: "block", padding: "10px 16px",
+                        fontSize: 13, color: "#374151", textDecoration: "none",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+
+                  {/* Log out */}
+                  <div style={{ borderTop: "1px solid #f1f5f9" }}>
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "10px 16px", fontSize: 13,
+                        color: "#ef4444", background: "none",
+                        border: "none", cursor: "pointer",
+                        transition: "background 0.15s", fontFamily: "inherit",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fff5f5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          ) : (
+
+            /* ── Logged-out: Login + Register buttons ── */
+            <>
+              <Link to="/login" style={{
+                fontSize: 13, fontWeight: 600, color: "#ff9c43",
+                textDecoration: "none", padding: "8px 16px",
+                border: "1.5px solid #ff9c43", borderRadius: 6,
+                transition: "all 0.2s",
+              }}
+                onMouseEnter={e => { e.target.style.background = "#ff9c43"; e.target.style.color = "white"; }}
+                onMouseLeave={e => { e.target.style.background = "transparent"; e.target.style.color = "#ff9c43"; }}
+              >Log In</Link>
+              <Link to="/register" style={{
+                fontSize: 13, fontWeight: 600, color: "white",
+                textDecoration: "none", padding: "8px 16px",
+                background: "#ff9c43", borderRadius: 6,
+                border: "1.5px solid #ff9c43",
+                transition: "all 0.2s",
+              }}
+                onMouseEnter={e => e.target.style.background = "#e07620"}
+                onMouseLeave={e => e.target.style.background = "#ff9c43"}
+              >Register</Link>
+            </>
+          )}
         </div>
+
       </div>
     </nav>
   );
@@ -304,7 +451,7 @@ function Hero() {
                   <div key={step} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: i < 3 ? 8 : 0 }}>
                     <div style={{
                       width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                      background: i < 4 ? "#ff9c43" : "#e2e8f0",
+                      background: "#ff9c43",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -317,11 +464,6 @@ function Hero() {
                     <div style={{ fontSize: 11, color: "#94a3b8" }}>
                       {["Apr 18", "Apr 19", "Apr 19", "Apr 20"][i]}
                     </div>
-                    {i < 3 && (
-                      <div style={{
-                        position: "absolute", left: 35, marginTop: 32,
-                      }} />
-                    )}
                   </div>
                 ))}
 
@@ -502,7 +644,7 @@ function TrackSection() {
               }}
             />
             <button
-            onClick={() => refNo && navigate(`/track?ref=${refNo}`)}
+              onClick={() => refNo && navigate(`/track?ref=${refNo}`)}
               style={{
                 padding: "16px 28px",
                 background: "#ff9c43", color: "white",
@@ -581,6 +723,12 @@ function Footer() {
 }
 
 export default function Landing() {
+  // Re-hydrate user object on every mount (token is persisted, user is not)
+  const { fetchUser, token } = useAuthStore();
+  useEffect(() => {
+    if (token) fetchUser();
+  }, []);
+
   return (
     <div style={{ fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", margin: 0, padding: 0 }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
